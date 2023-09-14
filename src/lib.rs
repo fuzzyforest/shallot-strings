@@ -1,3 +1,4 @@
+#![feature(macro_metavar_expr)]
 use anyhow::{bail, Context, Result};
 
 extern crate shallot;
@@ -37,18 +38,6 @@ impl Display for LispString {
     }
 }
 
-create_expression!(
-    StringyExpression,
-    List<StringyExpression>,
-    BuiltinFunction<StringyExpression>,
-    BuiltinMacro<StringyExpression>,
-    Lambda<StringyExpression>,
-    Macro<StringyExpression>,
-    LispString,
-    Number,
-    Symbol
-);
-
 pub fn split<E>(arguments: &[E], _env: &mut Environment<E>) -> Result<E>
 where
     E: LispExpression + ToAndFrom<LispString>,
@@ -71,7 +60,9 @@ pub fn upper(argument: &LispString) -> Result<LispString> {
     Ok(LispString(argument.0.to_uppercase()).into())
 }
 
-pub fn set_environment<E: LispExpression + ToAndFrom<LispString>>(env: &mut Environment<E>) {
-    env.set("split", BuiltinFunction::new("split", split));
-    env.set("upper", BuiltinFunction::new_wrapped("upper", upper));
-}
+create_layer!(
+   over
+   | atoms  LispString
+   | builtins "split" -> BuiltinFunction::new("split", split),
+            "upper" -> BuiltinFunction::new_wrapped("upper", upper)
+);
