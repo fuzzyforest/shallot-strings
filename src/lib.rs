@@ -1,5 +1,5 @@
 #![feature(macro_metavar_expr)]
-use anyhow::{bail, Context, Result};
+use anyhow::{ensure, Context, Result};
 
 extern crate shallot;
 
@@ -8,7 +8,7 @@ use std::fmt::Display;
 use shallot::*;
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct LispString(String);
+pub struct LispString(pub String);
 
 impl<E: LispExpression> Atom<E> for LispString {
     fn sized_name() -> &'static str
@@ -42,9 +42,8 @@ pub fn split<E>(arguments: &[E], _env: &mut Environment<E>) -> Result<E>
 where
     E: LispExpression + ToAndFrom<LispString>,
 {
-    if arguments.len() != 1 {
-        bail!("Split needs a single argument");
-    }
+    ensure!(arguments.len() == 1, "Split needs a single argument");
+
     let argument: &LispString = arguments[0]
         .try_into_atom()
         .context("Argument to split must be a string")?;
@@ -61,8 +60,8 @@ pub fn upper(argument: &LispString) -> Result<LispString> {
 }
 
 create_layer!(
-   over
-   | atoms  LispString
-   | builtins "split" -> BuiltinFunction::new("split", split),
-            "upper" -> BuiltinFunction::new_wrapped("upper", upper)
+   atoms  LispString
+   | builtins
+     "split" -> BuiltinFunction::new("split", split),
+     "upper" -> BuiltinFunction::new_wrapped("upper", upper)
 );
